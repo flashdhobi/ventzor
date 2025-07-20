@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "181744204342",
+    "project_id": "ventzor",
+    "storage_bucket": "ventzor.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:181744204342:android:e7dba37afdf27008d57697",
+        "android_client_info": {
+          "package_name": "com.flashtorial.ventzor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzSiscqZTsbkjtJ9Hikg4zmuEdB3CSWFA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

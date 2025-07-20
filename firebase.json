@@ -1,0 +1,45 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "ventzor",
+          "appId": "1:181744204342:android:e7dba37afdf27008d57697",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "ventzor",
+          "appId": "1:181744204342:ios:d52b3a27aa8886b1d57697",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "ventzor",
+          "configurations": {
+            "android": "1:181744204342:android:e7dba37afdf27008d57697",
+            "ios": "1:181744204342:ios:d52b3a27aa8886b1d57697",
+            "web": "1:181744204342:web:eaabb1205c53e8b2d57697"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
