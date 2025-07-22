@@ -1,4 +1,4 @@
-package com.example.ventzor
+package com.flashtorial.ventzor
 
 import io.flutter.embedding.android.FlutterActivity
 
