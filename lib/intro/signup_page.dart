@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:ventzor/model/ventzor_user.dart';
 
+import '../services/user_service.dart';
 import '../dashboard/home_page.dart';
 
 class SignupPage extends StatefulWidget {
@@ -15,55 +15,51 @@ class SignupPage extends StatefulWidget {
 class _SignupPageState extends State<SignupPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _orgController = TextEditingController();
+  final _nameController = TextEditingController();
 
   bool _loading = false;
   String? _error;
 
-  Future<void> _signup() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final orgName = _orgController.text.trim().toLowerCase();
+  final _auth = FirebaseAuth.instance;
+  final _userService = UserService();
 
+  Future<void> _signup() async {
     setState(() {
       _loading = true;
       _error = null;
     });
 
-    final firestore = FirebaseFirestore.instance;
-    final FirebaseFunctions _functions = FirebaseFunctions.instance;
-
-    final orgRef = firestore.collection('organizations').doc(orgName);
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final name = _nameController.text.trim();
 
     try {
-      final orgSnapshot = await orgRef.get();
+      // 1. Create Firebase Auth user
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-      if (orgSnapshot.exists) {
-        // 🔔 Org exists → send join request to admin
-        final adminEmail = orgSnapshot.data()?['adminEmail'];
+      final user = userCredential.user!;
+      final uid = user.uid;
 
-        await _functions.httpsCallable('sendJoinRequest').call({
-          'orgName': orgName,
-          'userEmail': email,
-          'adminEmail': adminEmail,
-        });
+      // 2. Create Firestore user profile (no org yet)
+      final ventozerUser = VentozerUser(
+        uid: uid,
+        email: email,
+        orgId: '', // Will be added later
+        role: 'member',
+        displayName: name,
+        createdAt: DateTime.now(),
+      );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Join request sent to admin.')),
-        );
-      } else {
-        // ORG DOESN’T EXIST: Create user and org
-        final userCredential = await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(email: email, password: password);
+      await _userService.createUser(ventozerUser);
 
-        await orgRef.set({'adminEmail': email, 'createdAt': Timestamp.now()});
-
-        debugPrint("Org created: $orgName with admin: $email");
-
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
-      }
+      // 3. Navigate to home
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const HomePage()),
+        (route) => false,
+      );
     } on FirebaseAuthException catch (e) {
       setState(() => _error = e.message);
     } finally {
@@ -74,14 +70,14 @@ class _SignupPageState extends State<SignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
+      appBar: AppBar(title: const Text('Sign Up')),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
             TextField(
-              controller: _orgController,
-              decoration: const InputDecoration(labelText: 'Organization Name'),
+              controller: _nameController,
+              decoration: const InputDecoration(labelText: 'Full Name'),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -101,7 +97,7 @@ class _SignupPageState extends State<SignupPage> {
               onPressed: _loading ? null : _signup,
               child: _loading
                   ? const CircularProgressIndicator()
-                  : const Text('Sign Up'),
+                  : const Text('Create Account'),
             ),
           ],
         ),

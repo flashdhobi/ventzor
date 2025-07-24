@@ -58,29 +58,20 @@ class _LoginPageState extends State<LoginPage> {
               // 🔷 Branding Section
               Column(
                 children: [
-                  Icon(
-                    Icons.rocket_launch,
-                    size: 64,
-                    color: Colors.tealAccent.shade700,
-                  ),
+                  Icon(Icons.rocket_launch, size: 64),
                   const SizedBox(height: 12),
                   const Text(
                     'Ventzor',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Colors.teal,
                       letterSpacing: 1.5,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     'Fuel your venture',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.teal.shade200,
-                      letterSpacing: 0.5,
-                    ),
+                    style: TextStyle(fontSize: 14, letterSpacing: 0.5),
                   ),
                 ],
               ),
@@ -120,7 +111,6 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: _loading ? null : _login,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.teal,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -139,7 +129,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: const Text("Don’t have an account? Sign up"),
               ),
 
-              const SizedBox(height: 140),
+              const SizedBox(height: 120),
               VersionBanner(),
             ],
           ),
