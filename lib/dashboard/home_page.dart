@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:ventzor/clients/clients_setup.dart';
+import 'package:ventzor/invoices/invoice_list_screen.dart';
 import 'package:ventzor/quotes/quote_screen.dart';
+import 'package:ventzor/scheduler/job_scheduler_screen.dart';
+import 'package:ventzor/scheduler/scheduler_screen.dart';
 import 'package:ventzor/setup/profile_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -17,8 +20,8 @@ class _HomePageState extends State<HomePage> {
     Center(child: Text('Organization')),
     Center(child: ClientsScreen()),
     Center(child: QuotesScreen()),
-    Center(child: Text('Invoices')),
-    Center(child: Text('Reminders')),
+    Center(child: InvoiceListScreen()),
+    Center(child: JobSchedulerScreen()),
     Center(child: ProfilePage()),
   ];
 
@@ -27,7 +30,7 @@ class _HomePageState extends State<HomePage> {
     'Clients',
     'Quotes',
     'Invoices',
-    'Reminders',
+    'Job Scheduler',
     'Profile',
   ];
 
@@ -46,10 +49,7 @@ class _HomePageState extends State<HomePage> {
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.apartment),
-            label: 'Dashboard',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.apartment), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Clients'),
           BottomNavigationBarItem(
             icon: Icon(Icons.request_quote),
@@ -59,7 +59,7 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.receipt_long),
             label: 'Invoices',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.alarm), label: 'Reminders'),
+          BottomNavigationBarItem(icon: Icon(Icons.alarm), label: 'Scheduler'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),

@@ -79,6 +79,31 @@ class Quote {
       pdfGeneratedAt: map['pdfGeneratedAt']?.toDate(),
     );
   }
+
+  factory Quote.fromFirestore(DocumentSnapshot doc) {
+    Map map = doc.data() as Map;
+    return Quote(
+      id: doc.id,
+      orgId: map['orgId'],
+      clientId: map['clientId'],
+      clientName: map['clientName'],
+      status: map['status'],
+      items: List<QuoteItem>.from(
+        map['items'].map((item) => QuoteItem.fromMap(item)),
+      ),
+      subtotal: map['subtotal'].toDouble(),
+      tax: map['tax'].toDouble(),
+      total: map['total'].toDouble(),
+      notes: map['notes'],
+      createdAt: (map['createdAt'] as Timestamp).toDate(),
+      expiryDate: map['expiryDate'] != null
+          ? (map['expiryDate'] as Timestamp).toDate()
+          : null,
+      createdBy: map['createdBy'],
+      pdfUrl: map['pdfUrl'],
+      pdfGeneratedAt: map['pdfGeneratedAt']?.toDate(),
+    );
+  }
 }
 
 class QuoteItem {
