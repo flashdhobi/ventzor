@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:ventzor/profile/profile_page.dart';
+import 'package:ventzor/clients/clients_setup.dart';
+import 'package:ventzor/quotes/quote_screen.dart';
+import 'package:ventzor/setup/profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,8 +15,8 @@ class _HomePageState extends State<HomePage> {
 
   final List<Widget> _pages = const [
     Center(child: Text('Organization')),
-    Center(child: Text('Customers')),
-    Center(child: Text('Quotes')),
+    Center(child: ClientsScreen()),
+    Center(child: QuotesScreen()),
     Center(child: Text('Invoices')),
     Center(child: Text('Reminders')),
     Center(child: ProfilePage()),
@@ -22,7 +24,7 @@ class _HomePageState extends State<HomePage> {
 
   final List<String> _titles = [
     'Organization',
-    'Customers',
+    'Clients',
     'Quotes',
     'Invoices',
     'Reminders',
@@ -44,8 +46,11 @@ class _HomePageState extends State<HomePage> {
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.apartment), label: 'Org'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Customers'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.apartment),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Clients'),
           BottomNavigationBarItem(
             icon: Icon(Icons.request_quote),
             label: 'Quotes',

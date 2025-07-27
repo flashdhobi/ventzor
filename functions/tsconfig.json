@@ -8,7 +8,19 @@
     "outDir": "lib",
     "sourceMap": true,
     "strict": true,
-    "target": "es2017"
+    "target": "es2017",
+    "baseUrl": ".",
+    "paths": {
+      "@core/*": [
+        "src/core/*"
+      ],
+      "@functions/*": [
+        "src/functions/*"
+      ],
+      "@types/*": [
+        "src/types/*"
+      ]
+    },
   },
   "compileOnSave": true,
   "include": [

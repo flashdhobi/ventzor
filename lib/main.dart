@@ -1,9 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:ventzor/clients/clients_setup.dart';
 import 'package:ventzor/firebase_options.dart';
 import 'package:ventzor/intro/splash_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ventzor/profile/org_setup.dart';
+import 'package:ventzor/setup/org_setup.dart';
+import 'package:ventzor/setup/pns_setup.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +30,8 @@ class VentzorApp extends StatelessWidget {
       routes: {
         // other routes...
         '/organizationSetup': (context) => const OrganizationSetupPage(),
+        '/productServiceSetup': (context) => const ProductsServicesSetupPage(),
+        '/clients': (context) => const ClientsScreen(),
       },
     );
   }
