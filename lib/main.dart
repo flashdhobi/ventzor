@@ -5,9 +5,11 @@ import 'package:ventzor/clients/clients_setup.dart';
 import 'package:ventzor/firebase_options.dart';
 import 'package:ventzor/intro/splash_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ventzor/services/client_service.dart';
 import 'package:ventzor/services/event_service.dart';
 import 'package:ventzor/services/invoice_service.dart';
 import 'package:ventzor/services/job_service.dart';
+import 'package:ventzor/services/pns_service.dart';
 import 'package:ventzor/services/quote_service.dart';
 import 'package:ventzor/setup/org_setup.dart';
 import 'package:ventzor/setup/pns_setup.dart';
@@ -29,6 +31,8 @@ class VentzorApp extends StatelessWidget {
         Provider(create: (_) => EventRepository()),
         Provider(create: (_) => JobRepository()),
         Provider(create: (_) => QuoteRepository()),
+        Provider(create: (_) => ClientRepository()),
+        Provider(create: (_) => PnSRepository()),
       ],
       child: MaterialApp(
         title: 'Ventzor',

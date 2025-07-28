@@ -32,4 +32,18 @@ class QuoteRepository {
   Future<void> updateQuoteStatus(String id, String status) {
     return _quotesCollection.doc(id).update({'status': status});
   }
+
+  Future getQuotesByClientAndStatus(String clientId, String status) async {
+    try {
+      final querySnapshot = await _quotesCollection
+          .where('clientId', isEqualTo: clientId)
+          .where('status', isEqualTo: status)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return querySnapshot.docs.map((doc) => Quote.fromFirestore(doc)).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch quotes: $e');
+    }
+  }
 }

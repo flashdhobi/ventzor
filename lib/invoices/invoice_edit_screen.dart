@@ -3,8 +3,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:ventzor/invoices/invoice_item_card.dart';
+import 'package:ventzor/model/client.dart';
 import 'package:ventzor/model/invoice.dart';
+import 'package:ventzor/model/job.dart';
+import 'package:ventzor/model/productservice.dart';
+import 'package:ventzor/services/client_service.dart';
 import 'package:ventzor/services/invoice_service.dart';
+import 'package:ventzor/services/job_service.dart';
+import 'package:ventzor/services/pns_service.dart';
 
 class InvoiceEditScreen extends StatefulWidget {
   final Invoice? invoice;
@@ -18,45 +25,98 @@ class InvoiceEditScreen extends StatefulWidget {
 class _InvoiceEditScreenState extends State<InvoiceEditScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  late String _orgId;
 
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _invoiceNumberController;
   late TextEditingController _clientNameController;
-  late DateTime _date;
-  late DateTime _dueDate;
-  late double _taxRate;
-  late String _notes;
-  late List<InvoiceItem> _items;
+  DateTime? _date;
+  DateTime? _dueDate;
+  double _taxRate = 0.0;
+  String _notes = '';
+  List<InvoiceItem> _items = [];
+  bool _isLoading = true;
+  String? _error;
+  String? _orgId;
+
+  // Client selection
+  Client? _selectedClient;
+  bool _loadingClients = false;
+  List<Client> _clients = [];
+
+  // Jobs selection
+  final List<Job> _completedJobs = [];
+  bool _loadingJobs = false;
+
+  // Products/Services selection
+  List<ProductService> _productsServices = [];
+  bool _loadingProducts = false;
 
   @override
   void initState() {
     super.initState();
-    _initInvoice();
+    _invoiceNumberController = TextEditingController();
+    _clientNameController = TextEditingController();
+    _loaduser();
+    _initializeData();
   }
 
-  _initInvoice() async {
-    final user = _auth.currentUser;
-    if (user == null) throw Exception('User not logged in');
+  Future<void> _loaduser() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('User not logged in');
 
-    final userDoc = await _firestore.collection('users').doc(user.uid).get();
-    _orgId = userDoc.data()?['orgId'];
-    if (_orgId == null) throw Exception('No organization assigned');
+      // Get user's organization ID
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      _orgId = userDoc.data()?['orgId'];
+      if (_orgId == null) throw Exception('No organization assigned');
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
-    final invoice = widget.invoice;
-    _invoiceNumberController = TextEditingController(
-      text:
-          invoice?.invoiceNumber ??
-          'INV-${DateTime.now().millisecondsSinceEpoch}',
-    );
-    _clientNameController = TextEditingController(
-      text: invoice?.clientName ?? '',
-    );
-    _date = invoice?.date ?? DateTime.now();
-    _dueDate = invoice?.dueDate ?? DateTime.now().add(const Duration(days: 30));
-    _taxRate = invoice?.taxRate ?? 0.0;
-    _notes = invoice?.notes ?? '';
-    _items = invoice?.items ?? [];
+  Future<void> _initializeData() async {
+    try {
+      // Load initial data
+      await _loadClients();
+
+      if (widget.invoice != null) {
+        // Editing existing invoice
+        _invoiceNumberController.text = widget.invoice!.invoiceNumber;
+        _clientNameController.text = widget.invoice!.clientName;
+        _date = widget.invoice!.date;
+        _dueDate = widget.invoice!.dueDate;
+        _taxRate = widget.invoice!.taxRate;
+        _notes = widget.invoice!.notes;
+        _items = widget.invoice!.items;
+
+        // Select the client
+        _selectedClient = _clients.firstWhere(
+          (c) => c.id == widget.invoice!.clientId,
+          orElse: () => _clients.first,
+        );
+
+        // Load completed jobs for this client
+        await _loadCompletedJobs(widget.invoice!.clientId);
+      } else {
+        // Creating new invoice
+        _invoiceNumberController.text =
+            'INV-${DateTime.now().millisecondsSinceEpoch}';
+        _date = DateTime.now();
+        _dueDate = DateTime.now().add(const Duration(days: 30));
+      }
+
+      // Load products/services
+      await _loadProductsServices();
+
+      setState(() => _isLoading = false);
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error initializing: $e')));
+    }
   }
 
   @override
@@ -71,12 +131,12 @@ class _InvoiceEditScreenState extends State<InvoiceEditScreen> {
 
     final invoice = Invoice(
       id: widget.invoice?.id,
-      orgId: _orgId,
+      orgId: _orgId!,
       clientId: widget.invoice!.clientId,
       invoiceNumber: _invoiceNumberController.text,
       clientName: _clientNameController.text,
-      date: _date,
-      dueDate: _dueDate,
+      date: _date!,
+      dueDate: _dueDate!,
       items: _items,
       taxRate: _taxRate,
       notes: _notes,
@@ -153,8 +213,88 @@ class _InvoiceEditScreenState extends State<InvoiceEditScreen> {
     });
   }
 
+  Future<void> _loadClients() async {
+    setState(() => _loadingClients = true);
+    try {
+      final clientRepo = Provider.of<ClientRepository>(context, listen: false);
+      _clients = await clientRepo.getClientsByOrg(
+        'current_org_id',
+      ); // Replace with your org ID
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to load clients: $e')));
+    } finally {
+      setState(() => _loadingClients = false);
+    }
+  }
+
+  Future<void> _loadCompletedJobs(String clientId) async {
+    setState(() => _loadingJobs = true);
+    try {
+      final jobRepo = Provider.of<JobRepository>(context, listen: false);
+      // _completedJobs = await jobRepo.getJobsByClientAndStatus(
+      //   clientId,
+      //   'completed',
+      // );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to load jobs: $e')));
+    } finally {
+      setState(() => _loadingJobs = false);
+    }
+  }
+
+  Future<void> _loadProductsServices() async {
+    setState(() => _loadingProducts = true);
+    try {
+      final pnsRepo = Provider.of<PnSRepository>(context, listen: false);
+      _productsServices = await pnsRepo.getActiveProductsServices(
+        'current_org_id',
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load products/services: $e')),
+      );
+    } finally {
+      setState(() => _loadingProducts = false);
+    }
+  }
+
+  void _addItemFromProduct(ProductService product) {
+    setState(() {
+      _items.add(
+        InvoiceItem(
+          description: product.name,
+          quantity: 1,
+          unitPrice: product.price,
+        ),
+      );
+    });
+  }
+
+  void _addItemsFromJob(Job job) {
+    // Add items from job's associated quote or manual entries
+    setState(() {
+      _items.add(
+        InvoiceItem(
+          description: job.description,
+          quantity: 1,
+          unitPrice: job.estimatedCost,
+        ),
+      );
+    });
+  }
+
+  // ... (keep existing _removeItem, _updateItem, _saveInvoice, _deleteInvoice methods)
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.invoice == null ? 'Create Invoice' : 'Edit Invoice'),
@@ -174,24 +314,34 @@ class _InvoiceEditScreenState extends State<InvoiceEditScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Client Selection
+              _buildClientDropdown(),
+              const SizedBox(height: 16),
+
+              // Completed Jobs Section
+              if (_selectedClient != null) _buildCompletedJobsSection(),
+              const SizedBox(height: 16),
+
+              // Products/Services Section
+              _buildProductsServicesSection(),
+              const SizedBox(height: 16),
+
+              // Invoice Details
               TextFormField(
                 controller: _invoiceNumberController,
                 decoration: const InputDecoration(labelText: 'Invoice Number'),
                 validator: (value) =>
                     value?.isEmpty ?? true ? 'Required' : null,
               ),
-              TextFormField(
-                controller: _clientNameController,
-                decoration: const InputDecoration(labelText: 'Client Name'),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Required' : null,
-              ),
+              const SizedBox(height: 16),
+
+              // Date Selection
               Row(
                 children: [
                   Expanded(
                     child: ListTile(
                       title: const Text('Date'),
-                      subtitle: Text(DateFormat.yMd().format(_date)),
+                      subtitle: Text(DateFormat.yMd().format(_date!)),
                       onTap: () async {
                         final date = await showDatePicker(
                           context: context,
@@ -199,16 +349,14 @@ class _InvoiceEditScreenState extends State<InvoiceEditScreen> {
                           firstDate: DateTime(2000),
                           lastDate: DateTime(2100),
                         );
-                        if (date != null) {
-                          setState(() => _date = date);
-                        }
+                        if (date != null) setState(() => _date = date);
                       },
                     ),
                   ),
                   Expanded(
                     child: ListTile(
                       title: const Text('Due Date'),
-                      subtitle: Text(DateFormat.yMd().format(_dueDate)),
+                      subtitle: Text(DateFormat.yMd().format(_dueDate!)),
                       onTap: () async {
                         final date = await showDatePicker(
                           context: context,
@@ -216,23 +364,16 @@ class _InvoiceEditScreenState extends State<InvoiceEditScreen> {
                           firstDate: DateTime(2000),
                           lastDate: DateTime(2100),
                         );
-                        if (date != null) {
-                          setState(() => _dueDate = date);
-                        }
+                        if (date != null) setState(() => _dueDate = date);
                       },
                     ),
                   ),
                 ],
               ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Tax Rate (%)'),
-                keyboardType: TextInputType.number,
-                initialValue: _taxRate.toString(),
-                onChanged: (value) =>
-                    _taxRate = double.tryParse(value) ?? _taxRate,
-              ),
               const SizedBox(height: 16),
-              const Text('Items', style: TextStyle(fontSize: 18)),
+
+              // Items List
+              const Text('Invoice Items', style: TextStyle(fontSize: 18)),
               ..._items.asMap().entries.map((entry) {
                 final index = entry.key;
                 final item = entry.value;
@@ -242,12 +383,9 @@ class _InvoiceEditScreenState extends State<InvoiceEditScreen> {
                   onDelete: () => _removeItem(index),
                 );
               }),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Add Item'),
-                onPressed: _addItem,
-              ),
               const SizedBox(height: 16),
+
+              // Notes
               TextFormField(
                 decoration: const InputDecoration(labelText: 'Notes'),
                 maxLines: 3,
@@ -255,6 +393,8 @@ class _InvoiceEditScreenState extends State<InvoiceEditScreen> {
                 onChanged: (value) => _notes = value,
               ),
               const SizedBox(height: 24),
+
+              // Totals
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -288,6 +428,124 @@ class _InvoiceEditScreenState extends State<InvoiceEditScreen> {
     );
   }
 
+  Widget _buildClientDropdown() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Client *',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            _loadingClients
+                ? const Center(child: CircularProgressIndicator())
+                : DropdownButtonFormField<Client>(
+                    value: _selectedClient,
+                    items: _clients.map((client) {
+                      return DropdownMenuItem<Client>(
+                        value: client,
+                        child: Text(client.name),
+                      );
+                    }).toList(),
+                    onChanged: (client) {
+                      setState(() {
+                        _selectedClient = client;
+                        _clientNameController.text = client?.name ?? '';
+                        if (client != null) {
+                          _loadCompletedJobs(client.id);
+                        }
+                      });
+                    },
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Select a client',
+                    ),
+                    validator: (value) =>
+                        value == null ? 'Please select a client' : null,
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompletedJobsSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Completed Jobs',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            _loadingJobs
+                ? const Center(child: CircularProgressIndicator())
+                : _completedJobs.isEmpty
+                ? const Text(
+                    'No completed jobs found',
+                    style: TextStyle(color: Colors.grey),
+                  )
+                : Column(
+                    children: _completedJobs.map((job) {
+                      return ListTile(
+                        title: Text(job.title),
+                        subtitle: Text(
+                          'Completed: ${DateFormat.yMd().format(job.endTime)}',
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () => _addItemsFromJob(job),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductsServicesSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Products & Services',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            _loadingProducts
+                ? const Center(child: CircularProgressIndicator())
+                : _productsServices.isEmpty
+                ? const Text(
+                    'No products/services found',
+                    style: TextStyle(color: Colors.grey),
+                  )
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _productsServices.map((item) {
+                      return FilterChip(
+                        label: Text('${item.name} (\$${item.price})'),
+                        onSelected: (_) => _addItemFromProduct(item),
+                      );
+                    }).toList(),
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTotalRow(String label, double amount, {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -303,91 +561,6 @@ class _InvoiceEditScreenState extends State<InvoiceEditScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class InvoiceItemCard extends StatelessWidget {
-  final InvoiceItem item;
-  final ValueChanged<InvoiceItem> onChanged;
-  final VoidCallback onDelete;
-
-  const InvoiceItemCard({
-    super.key,
-    required this.item,
-    required this.onChanged,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          children: [
-            TextFormField(
-              initialValue: item.description,
-              decoration: const InputDecoration(labelText: 'Description'),
-              onChanged: (value) =>
-                  onChanged(item.copyWith(description: value)),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    initialValue: item.quantity.toString(),
-                    decoration: const InputDecoration(labelText: 'Qty'),
-                    keyboardType: TextInputType.number,
-                    onChanged: (value) => onChanged(
-                      item.copyWith(
-                        quantity: double.tryParse(value) ?? item.quantity,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    initialValue: item.unitPrice.toString(),
-                    decoration: const InputDecoration(labelText: 'Unit Price'),
-                    keyboardType: TextInputType.number,
-                    onChanged: (value) => onChanged(
-                      item.copyWith(
-                        unitPrice: double.tryParse(value) ?? item.unitPrice,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  '\$${(item.quantity * item.unitPrice).toStringAsFixed(2)}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: onDelete,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-extension InvoiceItemCopyWith on InvoiceItem {
-  InvoiceItem copyWith({
-    String? description,
-    double? quantity,
-    double? unitPrice,
-  }) {
-    return InvoiceItem(
-      description: description ?? this.description,
-      quantity: quantity ?? this.quantity,
-      unitPrice: unitPrice ?? this.unitPrice,
     );
   }
 }

@@ -3,7 +3,6 @@ import 'package:ventzor/clients/clients_setup.dart';
 import 'package:ventzor/invoices/invoice_list_screen.dart';
 import 'package:ventzor/quotes/quote_screen.dart';
 import 'package:ventzor/scheduler/job_scheduler_screen.dart';
-import 'package:ventzor/scheduler/scheduler_screen.dart';
 import 'package:ventzor/setup/profile_page.dart';
 
 class HomePage extends StatefulWidget {

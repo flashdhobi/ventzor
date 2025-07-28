@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -16,16 +18,44 @@ class JobSchedulerScreen extends StatefulWidget {
 }
 
 class _JobSchedulerScreenState extends State<JobSchedulerScreen> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  bool _loading = false;
+  String? _error;
   late DateTime _focusedDay;
   DateTime? _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
   String _filterStatus = 'all';
+  String? _orgId;
 
   @override
   void initState() {
     super.initState();
     _focusedDay = DateTime.now();
     _selectedDay = DateTime.now();
+    _loaduser();
+  }
+
+  Future<void> _loaduser() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('User not logged in');
+
+      // Get user's organization ID
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      _orgId = userDoc.data()?['orgId'];
+      if (_orgId == null) throw Exception('No organization assigned');
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _loading = false);
+    }
   }
 
   @override
@@ -51,7 +81,8 @@ class _JobSchedulerScreenState extends State<JobSchedulerScreen> {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => JobEditScreen(initialDate: _selectedDay),
+                builder: (_) =>
+                    JobEditScreen(initialDate: _selectedDay, orgId: _orgId!),
               ),
             ),
           ),
@@ -224,24 +255,6 @@ class _JobSchedulerScreenState extends State<JobSchedulerScreen> {
     );
   }
 
-  Future<void> _showAddJobDialog(BuildContext context) async {
-    final job = await showDialog<Job>(
-      context: context,
-      builder: (context) =>
-          JobEditScreen(initialDate: _selectedDay ?? DateTime.now()),
-    );
-
-    if (job != null) {
-      try {
-        await Provider.of<JobRepository>(context, listen: false).addJob(job);
-      } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to add job: $e')));
-      }
-    }
-  }
-
   Future<void> _showJobDetails(BuildContext context, Job job) async {
     final quoteRepo = Provider.of<QuoteRepository>(context, listen: false);
     final quote = await quoteRepo.getQuote(job.quoteId).first;
@@ -317,7 +330,9 @@ class _JobSchedulerScreenState extends State<JobSchedulerScreen> {
         case 'edit':
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => JobEditScreen(job: job)),
+            MaterialPageRoute(
+              builder: (_) => JobEditScreen(job: job, orgId: _orgId!),
+            ),
           );
           break;
         case 'start':

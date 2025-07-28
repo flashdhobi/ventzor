@@ -54,3 +54,20 @@ class ProductService {
     );
   }
 }
+
+extension ProductServiceExtension on ProductService {
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'orgId': orgId,
+      'name': name,
+      'description': description,
+      'price': price,
+      'category': category,
+      'isService': isService,
+      'imageUrl': imageUrl,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'isActive': isActive,
+    };
+  }
+}

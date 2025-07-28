@@ -147,3 +147,23 @@ class QuoteItem {
 
   double get lineTotal => price * quantity;
 }
+
+extension QuoteItemExtension on QuoteItem {
+  QuoteItem copyWith({
+    String? itemId,
+    String? name,
+    String? description,
+    double? price,
+    int? quantity,
+    bool? isService,
+  }) {
+    return QuoteItem(
+      itemId: itemId ?? this.itemId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      quantity: quantity ?? this.quantity,
+      isService: isService ?? this.isService,
+    );
+  }
+}

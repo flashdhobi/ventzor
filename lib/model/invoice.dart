@@ -75,6 +75,18 @@ class InvoiceItem {
 
   double get total => quantity * unitPrice;
 
+  InvoiceItem copyWith({
+    String? description,
+    double? quantity,
+    double? unitPrice,
+  }) {
+    return InvoiceItem(
+      description: description ?? this.description,
+      quantity: quantity ?? this.quantity,
+      unitPrice: unitPrice ?? this.unitPrice,
+    );
+  }
+
   factory InvoiceItem.fromMap(Map<String, dynamic> map) {
     return InvoiceItem(
       description: map['description'],
