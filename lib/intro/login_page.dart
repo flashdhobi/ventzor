@@ -58,7 +58,11 @@ class _LoginPageState extends State<LoginPage> {
               // 🔷 Branding Section
               Column(
                 children: [
-                  Icon(Icons.rocket_launch, size: 64),
+                  Image.asset(
+                    'assets/images/logo.png',
+                    width: 200,
+                    height: 200,
+                  ),
                   const SizedBox(height: 12),
                   const Text(
                     'Ventzor',
@@ -75,7 +79,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 28),
 
               // 🔐 Login Form
               const Text(
@@ -129,7 +133,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: const Text("Don’t have an account? Sign up"),
               ),
 
-              const SizedBox(height: 120),
+              const SizedBox(height: 100),
               VersionBanner(),
             ],
           ),

@@ -31,23 +31,27 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromRGBO(79, 255, 103, 1),
+      backgroundColor: Colors.lightBlue,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.rocket_launch, size: 100),
+            Image.asset('assets/images/logo.png', width: 200, height: 200),
             const SizedBox(height: 20),
             const Text(
               'Ventzor',
               style: TextStyle(
+                color: Colors.white,
                 fontSize: 36,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 2,
               ),
             ),
             const SizedBox(height: 10),
-            Text('Fuel your venture.', style: TextStyle(fontSize: 16)),
+            Text(
+              'Fuel your venture.',
+              style: TextStyle(fontSize: 16, color: Colors.white),
+            ),
           ],
         ),
       ),

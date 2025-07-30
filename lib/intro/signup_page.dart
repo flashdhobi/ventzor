@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ventzor/miscscreens/html_viewer.dart';
 import 'package:ventzor/model/ventzor_user.dart';
 
 import '../services/user_service.dart';
@@ -99,7 +100,66 @@ class _SignupPageState extends State<SignupPage> {
                   ? const CircularProgressIndicator()
                   : const Text('Create Account'),
             ),
+
+            const SizedBox(height: 20),
+            _buildFooterLinks(),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooterLinks() {
+    return Column(
+      children: [
+        const Text(
+          "By signing up, you agree to our",
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildFooterLink("Terms & Conditions", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LocalHtmlViewer(
+                    filePath: "assets/html/terms_and_conditions.html",
+                    screenTitle: 'Terms & Conditions',
+                  ),
+                ),
+              );
+            }),
+            const Text(
+              " | ",
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            _buildFooterLink("Privacy Policy", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LocalHtmlViewer(
+                    filePath: "assets/html/privacy_policy.html",
+                    screenTitle: 'Privacy Policy',
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooterLink(String text, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.blueAccent,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

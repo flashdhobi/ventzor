@@ -48,6 +48,8 @@ dependencies:
   syncfusion_flutter_pdfviewer: ^30.1.41
   provider: ^6.1.5
   table_calendar: 
+  webview_flutter: ^4.13.0
+  flutter_html: ^3.0.0
 
 
 dev_dependencies:
@@ -76,6 +78,11 @@ flutter:
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
+
+  assets:
+     - assets/images/
+     - assets/html/privacy_policy.html
+     - assets/html/terms_and_conditions.html
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
