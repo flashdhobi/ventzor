@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ventzor/main.dart';
 import '../dashboard/home_page.dart';
 import 'login_page.dart';
 
@@ -12,20 +13,27 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(seconds: 2), () {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
-      } else {
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginPage()));
-      }
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final currentRoute = ModalRoute.of(context)?.settings.name;
+    if (currentRoute == RouteNames.splash || currentRoute == null) {
+      Future.delayed(const Duration(seconds: 2), () {
+        final user = FirebaseAuth.instance.currentUser;
+
+        if (!mounted) return;
+
+        if (user != null) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const HomePage()),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+          );
+        }
+      });
+    }
   }
 
   @override
